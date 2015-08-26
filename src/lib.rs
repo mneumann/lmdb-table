@@ -64,7 +64,7 @@ where K1: Sized + ToMdbValue + IsNativeInt + FromMdbValue,
       K2: Sized + ToMdbValue + IsNativeInt,
       T: Tablename
 {
-    fn new(env: &lmdb::Environment) -> IntToIntsTable<K1, K2, T> {
+    pub fn new(env: &lmdb::Environment) -> IntToIntsTable<K1, K2, T> {
         let flags = lmdb::core::DbIntKey |
                     lmdb::core::DbAllowDups | lmdb::core::DbAllowIntDups |
                     lmdb::core::DbDupFixed;
@@ -104,7 +104,7 @@ impl<K, T> IntToBlobTable<K, T>
 where K: Sized + ToMdbValue + IsNativeInt,
       T: Tablename
 {
-    fn new(env: &lmdb::Environment) -> IntToBlobTable<K, T> {
+    pub fn new(env: &lmdb::Environment) -> IntToBlobTable<K, T> {
         let flags = lmdb::core::DbIntKey;
 
         let db = env.create_db(T::as_str(), flags).unwrap();
@@ -128,7 +128,7 @@ impl<K, T> KeyToBlobTable<K, T>
 where K: Sized + ToMdbValue,
       T: Tablename
 {
-    fn new(env: &lmdb::Environment) -> KeyToBlobTable<K, T> {
+    pub fn new(env: &lmdb::Environment) -> KeyToBlobTable<K, T> {
         let flags = lmdb::core::DbFlags::empty();
 
         let db = env.create_db(T::as_str(), flags).unwrap();
@@ -156,7 +156,7 @@ where K: Sized + ToMdbValue + IsNativeInt,
       V: Sized + ToMdbValue + FromMdbValue,
       T: Tablename
 {
-    fn new(env: &lmdb::Environment) -> IntToRecordTable<K, V, T> {
+    pub fn new(env: &lmdb::Environment) -> IntToRecordTable<K, V, T> {
         let flags = lmdb::core::DbIntKey;
 
         let db = env.create_db(T::as_str(), flags).unwrap();
