@@ -64,13 +64,18 @@ where K1: Sized + ToMdbValue + IsNativeInt + FromMdbValue,
       K2: Sized + ToMdbValue + IsNativeInt,
       T: Tablename
 {
-    pub fn new(env: &lmdb::Environment) -> IntToIntsTable<K1, K2, T> {
-        let flags = lmdb::core::DbIntKey |
-                    lmdb::core::DbAllowDups | lmdb::core::DbAllowIntDups |
-                    lmdb::core::DbDupFixed;
+    fn flags() -> lmdb::core::DbFlags {
+        lmdb::core::DbIntKey |
+        lmdb::core::DbAllowDups | lmdb::core::DbAllowIntDups |
+        lmdb::core::DbDupFixed
+    }
 
-        let db = env.create_db(T::as_str(), flags).unwrap();
-        IntToIntsTable::new_from_handle(db)
+    pub fn create(env: &lmdb::Environment) -> IntToIntsTable<K1, K2, T> {
+        IntToIntsTable::new_from_handle(env.create_db(T::as_str(), Self::flags()).unwrap())
+    }
+
+    pub fn open(env: &lmdb::Environment) -> IntToIntsTable<K1, K2, T> {
+        IntToIntsTable::new_from_handle(env.get_db(T::as_str(), Self::flags()).unwrap())
     }
 
     fn new_from_handle(db: lmdb::DbHandle) -> IntToIntsTable<K1, K2, T> {
@@ -104,11 +109,16 @@ impl<K, T> IntToBlobTable<K, T>
 where K: Sized + ToMdbValue + IsNativeInt,
       T: Tablename
 {
-    pub fn new(env: &lmdb::Environment) -> IntToBlobTable<K, T> {
-        let flags = lmdb::core::DbIntKey;
+    fn flags() -> lmdb::core::DbFlags {
+        lmdb::core::DbIntKey
+    }
 
-        let db = env.create_db(T::as_str(), flags).unwrap();
-        IntToBlobTable::new_from_handle(db)
+    pub fn create(env: &lmdb::Environment) -> IntToBlobTable<K, T> {
+        IntToBlobTable::new_from_handle(env.create_db(T::as_str(), Self::flags()).unwrap())
+    }
+
+    pub fn open(env: &lmdb::Environment) -> IntToBlobTable<K, T> {
+        IntToBlobTable::new_from_handle(env.get_db(T::as_str(), Self::flags()).unwrap())
     }
 
     fn new_from_handle(db: lmdb::DbHandle) -> IntToBlobTable<K, T> {
@@ -128,11 +138,16 @@ impl<K, T> KeyToBlobTable<K, T>
 where K: Sized + ToMdbValue,
       T: Tablename
 {
-    pub fn new(env: &lmdb::Environment) -> KeyToBlobTable<K, T> {
-        let flags = lmdb::core::DbFlags::empty();
+    fn flags() -> lmdb::core::DbFlags {
+        lmdb::core::DbFlags::empty()
+    }
 
-        let db = env.create_db(T::as_str(), flags).unwrap();
-        KeyToBlobTable::new_from_handle(db)
+    pub fn create(env: &lmdb::Environment) -> KeyToBlobTable<K, T> {
+        KeyToBlobTable::new_from_handle(env.create_db(T::as_str(), Self::flags()).unwrap())
+    }
+
+    pub fn open(env: &lmdb::Environment) -> KeyToBlobTable<K, T> {
+        KeyToBlobTable::new_from_handle(env.get_db(T::as_str(), Self::flags()).unwrap())
     }
 
     fn new_from_handle(db: lmdb::DbHandle) -> KeyToBlobTable<K, T> {
@@ -156,11 +171,16 @@ where K: Sized + ToMdbValue + IsNativeInt,
       V: Sized + ToMdbValue + FromMdbValue,
       T: Tablename
 {
-    pub fn new(env: &lmdb::Environment) -> IntToRecordTable<K, V, T> {
-        let flags = lmdb::core::DbIntKey;
+    fn flags() -> lmdb::core::DbFlags {
+        lmdb::core::DbIntKey
+    }
 
-        let db = env.create_db(T::as_str(), flags).unwrap();
-        IntToRecordTable::new_from_handle(db)
+    pub fn create(env: &lmdb::Environment) -> IntToRecordTable<K, V, T> {
+        IntToRecordTable::new_from_handle(env.create_db(T::as_str(), Self::flags()).unwrap())
+    }
+
+    pub fn open(env: &lmdb::Environment) -> IntToRecordTable<K, V, T> {
+        IntToRecordTable::new_from_handle(env.get_db(T::as_str(), Self::flags()).unwrap())
     }
 
     fn new_from_handle(db: lmdb::DbHandle) -> IntToRecordTable<K, V, T> {
