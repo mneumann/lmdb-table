@@ -225,8 +225,8 @@ where K: Sized + ToMdbValue + IsNativeInt,
         self.db.get::<V>(key)
     }
 
-    pub fn update<F>(&self, key: &K, update: F) -> MdbResult<()>
-        where F: Fn(&mut V) -> bool {
+    pub fn update<F>(&self, key: &K, mut update: F) -> MdbResult<()>
+        where F: FnMut(&mut V) -> bool {
 
         let mut cursor = try!(self.db.new_cursor());
         try!(cursor.to_key(key));
@@ -242,10 +242,10 @@ where K: Sized + ToMdbValue + IsNativeInt,
         Ok(())
     }
 
-    pub fn insert_or_update<N, F>(&self, key: &K, insert_fn: N, update_fn: F) -> MdbResult<()>
+    pub fn insert_or_update<N, F>(&self, key: &K, insert_fn: N, mut update_fn: F) -> MdbResult<()>
         where
                 N: Fn() -> V,
-                F: Fn(&mut V) -> bool {
+                F: FnMut(&mut V) -> bool {
 
         // Trying to update first
         {
@@ -268,10 +268,10 @@ where K: Sized + ToMdbValue + IsNativeInt,
         }
     }
 
-    pub fn insert_or_update_default<F>(&self, key: &K, update_fn: F) -> MdbResult<bool>
+    pub fn insert_or_update_default<F>(&self, key: &K, mut update_fn: F) -> MdbResult<bool>
         where
                 V: Default,
-                F: Fn(&mut V) -> bool {
+                F: FnMut(&mut V) -> bool {
 
         // Trying to update first
         {
