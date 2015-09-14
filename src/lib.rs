@@ -57,6 +57,16 @@ pub struct BoundIntToRecordTable<'a, K, V, T> {
     _t: PhantomData<T>,
 }
 
+/// A table that maps an object of type `K` to a record/struct.
+#[derive(Clone)]
+pub struct KeyToRecordTable<K, V, T> {
+    pub db: lmdb::DbHandle,
+    _k: PhantomData<K>,
+    _v: PhantomData<V>,
+    _t: PhantomData<T>,
+}
+
+
 /* Implementations */
 
 impl<K1, K2, T> IntToIntsTable<K1, K2, T>
@@ -282,6 +292,64 @@ where K: Sized + ToMdbValue + IsNativeInt,
             let needs_update = update_fn(&mut value);
             if needs_update {
                 try!(self.db.insert(key, &value));
+            }
+            return Ok(needs_update);
+        }
+    }
+}
+
+impl<K, V, T> KeyToRecordTable<K, V, T>
+where K: Sized + ToMdbValue,
+      V: Sized + ToMdbValue + FromMdbValue,
+      T: Tablename
+{
+    fn flags() -> lmdb::core::DbFlags {
+        lmdb::core::DbFlags::empty()
+    }
+
+    pub fn create(env: &lmdb::Environment) -> KeyToRecordTable<K, V, T> {
+        KeyToRecordTable::new_from_handle(env.create_db(T::as_str(), Self::flags()).unwrap())
+    }
+
+    pub fn open(env: &lmdb::Environment) -> KeyToRecordTable<K, V, T> {
+        KeyToRecordTable::new_from_handle(env.get_db(T::as_str(), Self::flags()).unwrap())
+    }
+
+    fn new_from_handle(db: lmdb::DbHandle) -> KeyToRecordTable<K, V, T> {
+        KeyToRecordTable {db: db, _k: PhantomData, _v: PhantomData, _t: PhantomData}
+    }
+
+    pub fn insert(&self, txn: &Transaction, key: &K, val: &V) -> MdbResult<()> {
+        let db = txn.bind(&self.db);
+        db.insert(key, val)
+    }
+
+    pub fn insert_or_update_default<F>(&self, txn: &Transaction, key: &K, update_fn: F) -> MdbResult<bool>
+        where
+                V: Default,
+                F: Fn(&mut V) -> bool {
+
+        let db = txn.bind(&self.db);
+
+        // Trying to update first
+        {
+                let mut cursor = try!(db.new_cursor());
+                if let Ok(_) = cursor.to_key(key) {
+                        let mut value: V = try!(cursor.get_value());
+                        let needs_update = update_fn(&mut value);
+                        if needs_update {
+                                try!(cursor.replace(&value));
+                        }
+                        return Ok(needs_update);
+                }
+        }
+
+        // Now try to insert
+        {
+            let mut value: V = V::default();
+            let needs_update = update_fn(&mut value);
+            if needs_update {
+                try!(db.insert(key, &value));
             }
             return Ok(needs_update);
         }
