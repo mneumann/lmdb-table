@@ -66,6 +66,13 @@ pub struct KeyToRecordTable<K, V, T> {
     _t: PhantomData<T>,
 }
 
+/// Bound KeyToRecordTable. 
+pub struct BoundKeyToRecordTable<'a, K, V, T> {
+    db: lmdb::Database<'a>,
+    _k: PhantomData<K>,
+    _v: PhantomData<V>,
+    _t: PhantomData<T>,
+}
 
 /* Implementations */
 
@@ -354,4 +361,100 @@ where K: Sized + ToMdbValue,
             return Ok(needs_update);
         }
     }
+
+    pub fn bind_to_ro_txn<'a>(&self, txn: &'a lmdb::ReadonlyTransaction) -> BoundKeyToRecordTable<'a, K, V, T> {
+        BoundKeyToRecordTable {
+            db: txn.bind(&self.db),
+            _k: PhantomData, _v: PhantomData, _t: PhantomData}
+    }
+}
+
+impl<'a, K, V, T> BoundKeyToRecordTable<'a, K, V, T>
+where K: Sized + ToMdbValue,
+      V: Sized + ToMdbValue + FromMdbValue,
+      T: Tablename
+{
+    // fails if key exists.
+    pub fn insert(&self, key: &K, val: &V) -> MdbResult<()> {
+        self.db.insert(key, val)
+    }
+
+    // XXX: Should go into ReadonlyBound...
+    pub fn lookup(&self, key: &K) -> MdbResult<V> {
+        self.db.get::<V>(key)
+    }
+
+/*
+    pub fn update<F>(&self, key: &K, mut update: F) -> MdbResult<()>
+        where F: FnMut(&mut V) -> bool {
+
+        let mut cursor = try!(self.db.new_cursor());
+        try!(cursor.to_key(key));
+
+        let mut value: V = try!(cursor.get_value());
+
+        let needs_update = update(&mut value);
+
+        if needs_update {
+            try!(cursor.replace(&value));
+        }
+
+        Ok(())
+    }
+
+    pub fn insert_or_update<N, F>(&self, key: &K, insert_fn: N, mut update_fn: F) -> MdbResult<()>
+        where
+                N: Fn() -> V,
+                F: FnMut(&mut V) -> bool {
+
+        // Trying to update first
+        {
+                let mut cursor = try!(self.db.new_cursor());
+                if let Ok(_) = cursor.to_key(key) {
+                        let mut value: V = try!(cursor.get_value());
+                        let needs_update = update_fn(&mut value);
+                        if needs_update {
+                                try!(cursor.replace(&value));
+                        }
+                        return Ok(());
+                }
+        }
+
+        // Now try to insert
+        {
+            let value: V = insert_fn();
+            try!(self.db.insert(key, &value));
+            return Ok(());
+        }
+    }
+
+    pub fn insert_or_update_default<F>(&self, key: &K, mut update_fn: F) -> MdbResult<bool>
+        where
+                V: Default,
+                F: FnMut(&mut V) -> bool {
+
+        // Trying to update first
+        {
+                let mut cursor = try!(self.db.new_cursor());
+                if let Ok(_) = cursor.to_key(key) {
+                        let mut value: V = try!(cursor.get_value());
+                        let needs_update = update_fn(&mut value);
+                        if needs_update {
+                                try!(cursor.replace(&value));
+                        }
+                        return Ok(needs_update);
+                }
+        }
+
+        // Now try to insert
+        {
+            let mut value: V = V::default();
+            let needs_update = update_fn(&mut value);
+            if needs_update {
+                try!(self.db.insert(key, &value));
+            }
+            return Ok(needs_update);
+        }
+    }
+*/
 }
