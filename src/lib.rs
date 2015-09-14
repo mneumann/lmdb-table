@@ -324,10 +324,10 @@ where K: Sized + ToMdbValue,
         db.insert(key, val)
     }
 
-    pub fn insert_or_update_default<F>(&self, txn: &Transaction, key: &K, update_fn: F) -> MdbResult<bool>
+    pub fn insert_or_update_default<F>(&self, txn: &Transaction, key: &K, mut update_fn: F) -> MdbResult<bool>
         where
                 V: Default,
-                F: Fn(&mut V) -> bool {
+                F: FnMut(&mut V) -> bool {
 
         let db = txn.bind(&self.db);
 
