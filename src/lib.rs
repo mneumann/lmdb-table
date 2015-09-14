@@ -258,4 +258,32 @@ where K: Sized + ToMdbValue + IsNativeInt,
         }
     }
 
+    pub fn insert_or_update_default<F>(&self, key: &K, mut update_fn: F) -> MdbResult<()>
+        where
+                V: Default,
+                F: FnMut(&mut V) -> bool {
+
+        // Trying to update first
+        {
+                let mut cursor = try!(self.db.new_cursor());
+                if let Ok(_) = cursor.to_key(key) {
+                        let mut value: V = try!(cursor.get_value());
+                        let needs_update = update_fn(&mut value);
+                        if needs_update {
+                                try!(cursor.replace(&value));
+                        }
+                        return Ok(());
+                }
+        }
+
+        // Now try to insert
+        {
+            let mut value: V = V::default();
+            let needs_update = update_fn(&mut value);
+            if needs_update {
+                try!(self.db.insert(key, &value));
+            }
+            return Ok(());
+        }
+    }
 }
