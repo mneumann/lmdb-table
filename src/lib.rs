@@ -258,10 +258,10 @@ where K: Sized + ToMdbValue + IsNativeInt,
         }
     }
 
-    pub fn insert_or_update_default<F>(&self, key: &K, mut update_fn: F) -> MdbResult<()>
+    pub fn insert_or_update_default<F>(&self, key: &K, update_fn: F) -> MdbResult<bool>
         where
                 V: Default,
-                F: FnMut(&mut V) -> bool {
+                F: Fn(&mut V) -> bool {
 
         // Trying to update first
         {
@@ -272,7 +272,7 @@ where K: Sized + ToMdbValue + IsNativeInt,
                         if needs_update {
                                 try!(cursor.replace(&value));
                         }
-                        return Ok(());
+                        return Ok(needs_update);
                 }
         }
 
@@ -283,7 +283,7 @@ where K: Sized + ToMdbValue + IsNativeInt,
             if needs_update {
                 try!(self.db.insert(key, &value));
             }
-            return Ok(());
+            return Ok(needs_update);
         }
     }
 }
