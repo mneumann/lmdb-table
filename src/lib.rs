@@ -100,6 +100,7 @@ where K1: Sized + ToMdbValue + IsNativeInt + FromMdbValue,
     }
 
     // XXX: Can we optimize this, when iter is already sorted for example?
+    #[inline]
     pub fn insert_multiple<I>(&self, txn: &Transaction, iter: I) -> MdbResult<()> where I: Iterator<Item=(K1,K2)> {
         let db = txn.bind(&self.db);
         for (ref k1, ref k2) in iter {
@@ -108,6 +109,7 @@ where K1: Sized + ToMdbValue + IsNativeInt + FromMdbValue,
         Ok(())
     }
 
+    #[inline]
     pub fn insert(&self, txn: &Transaction, kv: &(K1, K2)) -> MdbResult<()> {
         let db = txn.bind(&self.db);
         db.set(&kv.0, &kv.1)
@@ -142,6 +144,7 @@ where K: Sized + ToMdbValue + IsNativeInt,
         IntToBlobTable {db: db, _k: PhantomData, _t: PhantomData}
     }
 
+    #[inline]
     pub fn insert(&self, txn: &Transaction, key: &K, val: &[u8]) -> MdbResult<()> {
         let db = txn.bind(&self.db);
         db.insert(key, &val)
@@ -171,6 +174,7 @@ where K: Sized + ToMdbValue,
         KeyToBlobTable {db: db, _k: PhantomData, _t: PhantomData}
     }
 
+    #[inline]
     pub fn insert(&self, txn: &Transaction, key: &K, val: &[u8]) -> MdbResult<()> {
         let db = txn.bind(&self.db);
         db.insert(key, &val)
@@ -204,12 +208,14 @@ where K: Sized + ToMdbValue + IsNativeInt,
         IntToRecordTable {db: db, _k: PhantomData, _v: PhantomData, _t: PhantomData}
     }
 
+    #[inline]
     pub fn bind_to_txn<'a>(&self, txn: &'a lmdb::Transaction) -> BoundIntToRecordTable<'a, K, V, T> {
         BoundIntToRecordTable {
             db: txn.bind(&self.db),
             _k: PhantomData, _v: PhantomData, _t: PhantomData}
     }
 
+    #[inline]
     pub fn bind_to_ro_txn<'a>(&self, txn: &'a lmdb::ReadonlyTransaction) -> BoundIntToRecordTable<'a, K, V, T> {
         BoundIntToRecordTable {
             db: txn.bind(&self.db),
@@ -223,15 +229,18 @@ where K: Sized + ToMdbValue + IsNativeInt,
       T: Tablename
 {
     // fails if key exists.
+    #[inline]
     pub fn insert(&self, key: &K, val: &V) -> MdbResult<()> {
         self.db.insert(key, val)
     }
 
     // XXX: Should go into ReadonlyBound...
+    #[inline]
     pub fn lookup(&self, key: &K) -> MdbResult<V> {
         self.db.get::<V>(key)
     }
 
+    #[inline]
     pub fn update<F>(&self, key: &K, mut update: F) -> MdbResult<()>
         where F: FnMut(&mut V) -> bool {
 
@@ -249,6 +258,7 @@ where K: Sized + ToMdbValue + IsNativeInt,
         Ok(())
     }
 
+    #[inline]
     pub fn insert_or_update<N, F>(&self, key: &K, insert_fn: N, mut update_fn: F) -> MdbResult<()>
         where
                 N: Fn() -> V,
@@ -275,6 +285,7 @@ where K: Sized + ToMdbValue + IsNativeInt,
         }
     }
 
+    #[inline]
     pub fn insert_or_update_default<F>(&self, key: &K, mut update_fn: F) -> MdbResult<bool>
         where
                 V: Default,
@@ -326,11 +337,13 @@ where K: Sized + ToMdbValue,
         KeyToRecordTable {db: db, _k: PhantomData, _v: PhantomData, _t: PhantomData}
     }
 
+    #[inline]
     pub fn insert(&self, txn: &Transaction, key: &K, val: &V) -> MdbResult<()> {
         let db = txn.bind(&self.db);
         db.insert(key, val)
     }
 
+    #[inline]
     pub fn insert_or_update_default<F>(&self, txn: &Transaction, key: &K, mut update_fn: F) -> MdbResult<bool>
         where
                 V: Default,
@@ -362,6 +375,7 @@ where K: Sized + ToMdbValue,
         }
     }
 
+    #[inline]
     pub fn bind_to_ro_txn<'a>(&self, txn: &'a lmdb::ReadonlyTransaction) -> BoundKeyToRecordTable<'a, K, V, T> {
         BoundKeyToRecordTable {
             db: txn.bind(&self.db),
@@ -375,11 +389,13 @@ where K: Sized + ToMdbValue,
       T: Tablename
 {
     // fails if key exists.
+    #[inline]
     pub fn insert(&self, key: &K, val: &V) -> MdbResult<()> {
         self.db.insert(key, val)
     }
 
     // XXX: Should go into ReadonlyBound...
+    #[inline]
     pub fn lookup(&self, key: &K) -> MdbResult<V> {
         self.db.get::<V>(key)
     }
