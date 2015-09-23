@@ -32,6 +32,13 @@ pub struct IntToBlobTable<K, T> {
     _t: PhantomData<T>,
 }
 
+/// Bound IntToBlobTable. 
+pub struct BoundIntToBlobTable<'a, K, T> {
+    db: lmdb::Database<'a>,
+    _k: PhantomData<K>,
+    _t: PhantomData<T>,
+}
+
 /// A table that maps an object of type `K` to a blob.
 #[derive(Clone)]
 pub struct KeyToBlobTable<K, T> {
@@ -150,7 +157,23 @@ where K: Sized + ToMdbValue + IsNativeInt,
         db.insert(key, &val)
     }
 
-    // fn lookup
+    #[inline]
+    pub fn bind_to_ro_txn<'a>(&self, txn: &'a lmdb::ReadonlyTransaction) -> BoundIntToBlobTable<'a, K, T> {
+        BoundIntToBlobTable {
+            db: txn.bind(&self.db),
+            _k: PhantomData, _t: PhantomData}
+    }
+}
+
+impl<'a, K, T> BoundIntToBlobTable<'a, K, T>
+where K: Sized + ToMdbValue + IsNativeInt,
+      T: Tablename
+{
+    // XXX: Should go into ReadonlyBound...
+    #[inline]
+    pub fn lookup(&self, key: &K) -> MdbResult<&'a [u8]> {
+        self.db.get(key)
+    }
 }
 
 
