@@ -428,7 +428,7 @@ where K: Sized + ToMdbValue + IsNativeInt,
 
     /// Returns the old value, or None.
     #[inline]
-    pub fn update_or_insert_value<N, F>(&self, key: &K, update_fn:F, insert_value: V) -> MdbResult<Option<V>>
+    pub fn update_or_insert_value<F>(&self, key: &K, update_fn:F, insert_value: V) -> MdbResult<Option<V>>
         where
                 F: Fn(&V) -> V {
 
