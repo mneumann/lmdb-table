@@ -47,6 +47,21 @@ pub struct KeyToBlobTable<K, T> {
     _t: PhantomData<T>,
 }
 
+/// A table that maps a a blob to an object of type `V`.
+#[derive(Clone)]
+pub struct BlobToRecordTable<V, T> {
+    pub db: lmdb::DbHandle,
+    _v: PhantomData<V>,
+    _t: PhantomData<T>,
+}
+
+/// Bound BlobToRecordTable. 
+pub struct BoundBlobToRecordTable<'a, V, T> {
+    db: lmdb::Database<'a>,
+    _v: PhantomData<V>,
+    _t: PhantomData<T>,
+}
+
 /// A table that represenents a set of object of `K`.
 #[derive(Clone)]
 pub struct KeyOnlyTable<K, T> {
@@ -215,6 +230,59 @@ where K: Sized + ToMdbValue,
 
     // fn lookup
 }
+
+impl<V, T> BlobToRecordTable<V, T>
+where V: Sized + ToMdbValue,
+      T: Tablename
+{
+    fn flags() -> lmdb::core::DbFlags {
+        lmdb::core::DbFlags::empty()
+    }
+
+    pub fn create(env: &lmdb::Environment) -> BlobToRecordTable<V, T> {
+        BlobToRecordTable::new_from_handle(env.create_db(T::as_str(), Self::flags()).unwrap())
+    }
+
+    pub fn open(env: &lmdb::Environment) -> BlobToRecordTable<V, T> {
+        BlobToRecordTable::new_from_handle(env.get_db(T::as_str(), Self::flags()).unwrap())
+    }
+
+    fn new_from_handle(db: lmdb::DbHandle) -> BlobToRecordTable<V, T> {
+        BlobToRecordTable {db: db, _v: PhantomData, _t: PhantomData}
+    }
+
+    #[inline]
+    pub fn bind_to_txn<'a>(&self, txn: &'a lmdb::Transaction) -> BoundBlobToRecordTable<'a, V, T> {
+        BoundBlobToRecordTable {
+            db: txn.bind(&self.db),
+            _v: PhantomData, _t: PhantomData}
+    }
+
+    #[inline]
+    pub fn bind_to_ro_txn<'a>(&self, txn: &'a lmdb::ReadonlyTransaction) -> BoundBlobToRecordTable<'a, V, T> {
+        BoundBlobToRecordTable {
+            db: txn.bind(&self.db),
+            _v: PhantomData, _t: PhantomData}
+    }
+}
+
+impl<'a, V, T> BoundBlobToRecordTable<'a, V, T>
+where V: Sized + ToMdbValue + FromMdbValue,
+      T: Tablename
+{
+    // fails if key exists.
+    #[inline]
+    pub fn insert(&self, key: &[u8], val: &V) -> MdbResult<()> {
+        self.db.insert(&key, val)
+    }
+
+    // XXX: Should go into ReadonlyBound...
+    #[inline]
+    pub fn lookup(&self, key: &[u8]) -> MdbResult<V> {
+        self.db.get::<V>(&key)
+    }
+}
+
 
 // Can we insert zero-sized values? Right now we insert "S".
 impl<K, T> KeyOnlyTable<K, T>
