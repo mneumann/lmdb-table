@@ -426,6 +426,30 @@ where K: Sized + ToMdbValue + IsNativeInt,
         }
     }
 
+    /// Returns the old value, or None.
+    #[inline]
+    pub fn update_or_insert_value<N, F>(&self, key: &K, update_fn:F, insert_value: V) -> MdbResult<Option<V>>
+        where
+                F: Fn(&V) -> V {
+
+        // Trying to update first
+        {
+                let mut cursor = try!(self.db.new_cursor());
+                if let Ok(_) = cursor.to_key(key) {
+                        let orig_value: V = try!(cursor.get_value());
+                        let new_value = update_fn(&orig_value);
+                        try!(cursor.replace(&new_value));
+                        return Ok(Some(orig_value));
+                }
+        }
+
+        // Now try to insert
+        {
+            try!(self.db.insert(key, &insert_value));
+            return Ok(None);
+        }
+    }
+
     #[inline]
     pub fn insert_or_update_default<F>(&self, key: &K, mut update_fn: F) -> MdbResult<bool>
         where
