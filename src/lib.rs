@@ -47,6 +47,14 @@ pub struct KeyToBlobTable<K, T> {
     _t: PhantomData<T>,
 }
 
+/// A table that represenents a set of object of `K`.
+#[derive(Clone)]
+pub struct KeyOnlyTable<K, T> {
+    pub db: lmdb::DbHandle,
+    _k: PhantomData<K>,
+    _t: PhantomData<T>,
+}
+
 /// A table that maps an integer to a record/struct.
 #[derive(Clone)]
 pub struct IntToRecordTable<K, V, T> {
@@ -122,12 +130,14 @@ where K1: Sized + ToMdbValue + IsNativeInt + FromMdbValue,
         db.set(&kv.0, &kv.1)
     }
 
+/*
     fn last_key(&self, txn: &lmdb::core::ReadonlyTransaction) -> MdbResult<K1> {
         let db = txn.bind(&self.db);
         let mut cursor = try!(db.new_cursor());
         try!(cursor.to_last());
         cursor.get_key()
     }
+*/
 }
 
 
@@ -205,6 +215,46 @@ where K: Sized + ToMdbValue,
 
     // fn lookup
 }
+
+// Can we insert zero-sized values? Right now we insert "S".
+impl<K, T> KeyOnlyTable<K, T>
+where K: Sized + ToMdbValue,
+      T: Tablename
+{
+    fn flags() -> lmdb::core::DbFlags {
+        lmdb::core::DbFlags::empty()
+    }
+
+    pub fn create(env: &lmdb::Environment) -> KeyOnlyTable<K, T> {
+        KeyOnlyTable::new_from_handle(env.create_db(T::as_str(), Self::flags()).unwrap())
+    }
+
+    pub fn open(env: &lmdb::Environment) -> KeyOnlyTable<K, T> {
+        KeyOnlyTable::new_from_handle(env.get_db(T::as_str(), Self::flags()).unwrap())
+    }
+
+    fn new_from_handle(db: lmdb::DbHandle) -> KeyOnlyTable<K, T> {
+        KeyOnlyTable {db: db, _k: PhantomData, _t: PhantomData}
+    }
+
+    #[inline]
+    pub fn insert(&self, txn: &Transaction, key: &K) -> MdbResult<()> {
+        let db = txn.bind(&self.db);
+        db.insert(key, &"S")
+    }
+
+    #[inline]
+    pub fn insert_multiple<I>(&self, txn: &Transaction, keys: I) -> MdbResult<()> where I: Iterator<Item=K> {
+        let db = txn.bind(&self.db);
+        for key in keys {
+            try!(db.insert(&key, &"S"));
+        }
+        Ok(())
+    }
+}
+
+
+
 
 //
 // A unique(native-int) -> sized record value lookup table
