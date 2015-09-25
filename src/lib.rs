@@ -70,6 +70,13 @@ pub struct KeyOnlyTable<K, T> {
     _t: PhantomData<T>,
 }
 
+/// Bound KeyOnlyTable. 
+pub struct BoundKeyOnlyTable<'a, K, T> {
+    db: lmdb::Database<'a>,
+    _k: PhantomData<K>,
+    _t: PhantomData<T>,
+}
+
 /// A table that maps an integer to a record/struct.
 #[derive(Clone)]
 pub struct IntToRecordTable<K, V, T> {
@@ -307,21 +314,49 @@ where K: Sized + ToMdbValue,
 
     #[inline]
     pub fn insert(&self, txn: &Transaction, key: &K) -> MdbResult<()> {
-        let db = txn.bind(&self.db);
-        db.insert(key, &"S")
+        self.bind_to_txn(txn).insert(key)
     }
 
     #[inline]
     pub fn insert_multiple<I>(&self, txn: &Transaction, keys: I) -> MdbResult<()> where I: Iterator<Item=K> {
-        let db = txn.bind(&self.db);
+        let bound = self.bind_to_txn(txn);
         for key in keys {
-            try!(db.insert(&key, &"S"));
+            try!(bound.insert(&key));
         }
         Ok(())
     }
+
+    #[inline]
+    pub fn bind_to_txn<'a>(&self, txn: &'a lmdb::Transaction) -> BoundKeyOnlyTable<'a, K, T> {
+        BoundKeyOnlyTable {
+            db: txn.bind(&self.db),
+            _k: PhantomData, _t: PhantomData}
+    }
+
+    #[inline]
+    pub fn bind_to_ro_txn<'a>(&self, txn: &'a lmdb::ReadonlyTransaction) -> BoundKeyOnlyTable<'a, K, T> {
+        BoundKeyOnlyTable {
+            db: txn.bind(&self.db),
+            _k: PhantomData, _t: PhantomData}
+    }
 }
 
+impl<'a, K, T> BoundKeyOnlyTable<'a, K, T>
+where K: Sized + ToMdbValue,
+      T: Tablename
+{
+    // fails if key exists.
+    #[inline]
+    pub fn insert(&self, key: &K) -> MdbResult<()> {
+        self.db.insert(key, &"S")
+    }
 
+    // fails if key does not exist.
+    #[inline]
+    pub fn remove(&self, key: &K) -> MdbResult<()> {
+        self.db.del(key)
+    }
+}
 
 
 //
