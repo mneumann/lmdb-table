@@ -72,7 +72,7 @@ pub struct KeyOnlyTable<K, T> {
 
 /// Bound KeyOnlyTable. 
 pub struct BoundKeyOnlyTable<'a, K, T> {
-    db: lmdb::Database<'a>,
+    pub db: lmdb::Database<'a>,
     _k: PhantomData<K>,
     _t: PhantomData<T>,
 }
@@ -105,7 +105,7 @@ pub struct KeyToRecordTable<K, V, T> {
 
 /// Bound KeyToRecordTable. 
 pub struct BoundKeyToRecordTable<'a, K, V, T> {
-    db: lmdb::Database<'a>,
+    pub db: lmdb::Database<'a>,
     _k: PhantomData<K>,
     _v: PhantomData<V>,
     _t: PhantomData<T>,
