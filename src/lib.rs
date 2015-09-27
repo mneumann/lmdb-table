@@ -234,8 +234,6 @@ where K: Sized + ToMdbValue,
         let db = txn.bind(&self.db);
         db.insert(key, &val)
     }
-
-    // fn lookup
 }
 
 impl<V, T> BlobToRecordTable<V, T>
@@ -287,6 +285,11 @@ where V: Sized + ToMdbValue + FromMdbValue,
     #[inline]
     pub fn lookup(&self, key: &[u8]) -> MdbResult<V> {
         self.db.get::<V>(&key)
+    }
+
+    #[inline]
+    pub fn lookup_ref<'b>(&self, key: &[u8]) -> MdbResult<&'b V> where &'b V: FromMdbValue {
+        self.db.get::<&V>(&key)
     }
 }
 
@@ -414,6 +417,11 @@ where K: Sized + ToMdbValue + IsNativeInt,
     #[inline]
     pub fn lookup(&self, key: &K) -> MdbResult<V> {
         self.db.get::<V>(key)
+    }
+
+    #[inline]
+    pub fn lookup_ref<'b>(&self, key: &[u8]) -> MdbResult<&'b V> where &'b V: FromMdbValue {
+        self.db.get::<&V>(&key)
     }
 
     #[inline]
@@ -598,6 +606,11 @@ where K: Sized + ToMdbValue,
     #[inline]
     pub fn lookup(&self, key: &K) -> MdbResult<V> {
         self.db.get::<V>(key)
+    }
+
+    #[inline]
+    pub fn lookup_ref<'b>(&self, key: &[u8]) -> MdbResult<&'b V> where &'b V: FromMdbValue {
+        self.db.get::<&V>(&key)
     }
 
 /*
