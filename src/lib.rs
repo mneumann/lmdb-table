@@ -425,7 +425,7 @@ where K: Sized + ToMdbValue + IsNativeInt,
     }
 
     #[inline]
-    pub fn update<F>(&self, key: &K, mut update: F) -> MdbResult<()>
+    pub fn update<F>(&self, key: &K, mut update: F) -> MdbResult<bool>
         where F: FnMut(&mut V) -> bool {
 
         let mut cursor = try!(self.db.new_cursor());
@@ -439,7 +439,7 @@ where K: Sized + ToMdbValue + IsNativeInt,
             try!(cursor.replace(&value));
         }
 
-        Ok(())
+        Ok(needs_update)
     }
 
     #[inline]
