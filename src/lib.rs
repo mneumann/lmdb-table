@@ -420,8 +420,8 @@ where K: Sized + ToMdbValue + IsNativeInt,
     }
 
     #[inline]
-    pub fn lookup_ref<'b>(&self, key: &[u8]) -> MdbResult<&'b V> where &'b V: FromMdbValue {
-        self.db.get::<&V>(&key)
+    pub fn lookup_ref<'b>(&self, key: &K) -> MdbResult<&'b V> where &'b V: FromMdbValue {
+        self.db.get::<&V>(key)
     }
 
     #[inline]
@@ -609,8 +609,8 @@ where K: Sized + ToMdbValue,
     }
 
     #[inline]
-    pub fn lookup_ref<'b>(&self, key: &[u8]) -> MdbResult<&'b V> where &'b V: FromMdbValue {
-        self.db.get::<&V>(&key)
+    pub fn lookup_ref<'b>(&self, key: &K) -> MdbResult<&'b V> where &'b V: FromMdbValue {
+        self.db.get::<&V>(key)
     }
 
 /*
